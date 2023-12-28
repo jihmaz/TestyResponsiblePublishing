@@ -3,7 +3,7 @@ import os
 import sys
 from replit import db
 import time
-from aiogram import Bot, Dispatcher, executor, types
+from aiogram import Bot, Dispatcher, dispatcher, executor, types
 
 openai.api_key = os.environ['OPENAI_API_KEY']
 if openai.api_key == "":
@@ -31,6 +31,7 @@ doctors = client.files.create(file=open("Doctors.pdf", "rb"),
 
 #Create a message to send a message to the assistant and obtain the response
 def send_message(message, thread_id):
+  
   thread_message = client.beta.threads.messages.create(thread_id,
                                                        role="user",
                                                        content=message)
@@ -87,13 +88,20 @@ if __name__ == "__main__":
                                                        content="Hi")
   print(thread_message)
 
-  user_msg = None
-  while user_msg != "(exit)":
-    user_msg = input("You: ")
-    if user_msg == "(exit)":
-      print("Thank you, hope to see you soon!")
-      sys.exit()
-      break
-    #4- send the message to the assistant
-    assistant_msg = send_message(user_msg, thread.id)
-    print("Assistant: ", assistant_msg)
+  TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
+  bot = Bot(token = TELEGRAM_TOKEN)
+  dp = Dispatcher(bot)
+  @dp.message_handler(commands=["start"])
+  async def welcome(message: types.Message):
+    
+    await message.answer("Hi! I am your medical assistant!\n I can help you arrange your appointments with the doctors, answer your questions about the medicines, and suggest you the best doctor for your symptoms> Also I can help you with the laboratory test availability and the cost of the test.\n To arrange an appointment")
+  @dp.message_handler()
+  async def reply(m_message: types.Message):
+    response = send_message(m_message.text, thread.id)
+    await m_message.answer(response)
+    
+  print("Bot is running!"	)
+
+  
+  executor.start_polling(dp)
+
